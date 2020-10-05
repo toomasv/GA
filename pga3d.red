@@ -349,12 +349,12 @@ PGA3D: object [
     E021: E0 ^ E2 ^ E1
 	
 	E0123: E0 ^ E1 ^ E2 ^ E3
-;comment {
 
     ; A point is just a homogeneous point, euclidean coordinates plus the origin
     POINT: func [x y z][
         E123 + (x * E032) + (y * E013) + (z * E021)
 	]
+comment {
 	;Ideal point
 	iPOINT: func [x y z][
 		(x * E032) + (y * E013) + (z * E021)
@@ -422,7 +422,7 @@ PGA3D: object [
     print [E0 _ 1]
     print [1 _ E0]
 	}
-;}
+}
 comment {
 start1: start2: 0 step1: 0.05 step2: 1 
 view [
