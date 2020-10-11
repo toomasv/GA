@@ -381,7 +381,7 @@ e.g. [
 #blue F: polygon [[-.1 -.1][-.1 -1][-.6 -1][-.6 -.8][-.3 -.8][-.3 -.6][-.5 -.6][-.5 -.4][-.3 -.4][-.3 -.1]]
 #red rotate F 90
 ]
-e.g [
+e.g. [
 ;NB! y coordinate in lines is reversed to make it work
 p1: point -1 2 "P1"	;func to create point (with implicit origin)
 p2: pnt 1 1 1  "P2" ;func to create point (with explicit origin)
