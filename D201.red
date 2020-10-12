@@ -4,6 +4,7 @@ Red [
 #include %algebra.red
 
 cpy: func [a [series! object!]][copy/deep a]
+nearby: 4
 
 norm-line: func [
 	line [vector!]
@@ -354,7 +355,7 @@ context [
 			] on-down [;probe code probe face/draw
 				ref: none
 				parse face/draw [any [
-					'circle s: 2 skip 'text if (2 >= distance (event/offset - origin) - s/1) skip s: (
+					'circle s: 2 skip 'text if (nearby >= distance (event/offset - origin) - s/1) skip s: (
 						ref: skip find code s/1 -2
 					) 
 					| skip
