@@ -400,7 +400,7 @@ l4 ^ l2 form round/to arccosine first (normalized/line l2) | (normalized/line l4
 r1 | l3 * l3		;point dot line prod line gives projection of point on line
 ;first (normalized/line l2) & p1 ;join of normalized line and point produces scalar, distance from line to point
 ]
-;Pappus' theorem
+;Pappus's theorem
 e.g. [
 q1: point -2 -2 "Q1"
 q3: point 2 -2 "Q3"
@@ -421,4 +421,30 @@ x: (q1 & o2) ^ (q2 & o1) "X"
 y: (q1 & o3) ^ (q3 & o1) "Y"
 z: (q2 & o3) ^ (q3 & o2) "Z"
 x & z
+]
+;Desargues's theorem
+e.g. [
+red 2 ;Dragable points
+p0: point 2 0 "P0" ;perspector
+p1: point -2 -1 "P1" p2: point -1 0 "P2" p3: point -2 1 "P3"
+q1: point -1 -2 "Q1" 
+q2: point 1.5 2 "Q2" 
+q3: point -1.5 2 "Q3"
+silver 1 
+l1: p0 & p1 l2: p0 & p2 l3: p0 & p3
+leaf
+l4: p1 & p2 l5: p3 & p2 l6: p1 & p3
+orange
+m1: q1 & q2 
+o2: normalized/point l2 ^ m1 "O2" 
+m2: q3 & o2
+o1: normalized/point l1 ^ m1 "O1" 
+o3: normalized/point m2 ^ l3 "O3"
+m3: o3 & o1 m4: o2 & o3
+black 2
+triangle p1 p2 p3 
+triangle o1 o2 o3
+blue 
+k1: l6 ^ m3 k2: l4 ^ m1 l5 ^ m4
+1 k1 & k2 ;perspectrix
 ]
