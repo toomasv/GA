@@ -5,6 +5,7 @@ Red [
 
 cpy: func [a [series! object!]][copy/deep a]
 nearby: 4
+axis: none
 
 norm-plane: func [
 	plane [vector!]
@@ -112,22 +113,20 @@ rot: func [
 
 rotate: func [
 	"Rotate blade by angle"
-	blade [vector! object!] "Rotated blade or object"
-	angle [integer! float!] "Angle of rotation"
-	axis  [vector!]         "Axis of rotation"
+	blade [vector! object!]      "Rotated blade or object"
+	rotor  [vector!]             "Rotor or axis of rotation (if angle is specified)"
+	/angle ang [integer! float!] "Angle of rotation"
 	/radians
-	/local
-		rotor [vector!]
+	;/local
+	;	rotor [vector!]
 ][
-	rotor: either radians [
-		rot/radians angle axis
-	][
-		rot angle axis
+	if angle [
+		rotor: either radians [
+			rot/radians ang rotor
+		][
+			rot ang rotor
+		]
 	]
-	rotor * blade * ~ rotor
-]
-
-rotate2: func [blade [vector! object!] rotor [vector!]][
 	rotor * blade * ~ rotor
 ]
 
@@ -322,6 +321,7 @@ algebra [3 0 1]
 
 ideal-plane: e0
 origin-point: e123
+tp: none
 
 ctx: context [
 	origin: 250x250
@@ -330,6 +330,11 @@ ctx: context [
 	bx: none
 	rate: none
 	el: none
+	rotation-points: copy []
+	ax: reduce ['x e23 'y e13 'z e12 'esc none]
+	code: none
+	degrees: 5
+	cam: 10
 	
 	i-plane?: func [elem [vector!]][
 		all [not zero? elem/2 zero? elem/3 zero? elem/4 zero? elem/5]
@@ -369,8 +374,7 @@ ctx: context [
 		false
 	]
 	
-	cam: 100;5
-	render: func [elem /local ln ln-perp a b d pt x y z trans t w l-weight][
+	render: func [elem /local ln a b c d po pt x y z w trans t l-weight][
 		l-weight: 5
 		switch type?/word elem [
 			;vector! [repend bx/draw ['line 0x0 p: as-pair scale * elem/2 scale * elem/3]]
@@ -378,13 +382,13 @@ ctx: context [
 			vector! [
 				case [
 					plane? elem [
-						set [w x y z] grade/only elem 1
-						d: create/grade reduce [0 0 0 z y x] 2
-						po: w * normalized/point elem ^ d
-						set [a b c d] grade/only po 3
+					;	set [w x y z] grade/only elem 1
+					;	d: create/grade reduce [0 0 0 z y x] 2
+					;	po: w * normalized/point elem ^ d
+					;	set [a b c d] grade/only po 3
 						
-						append bx/draw 'push 
-						repend/only bx/draw [
+					;	append bx/draw 'push 
+					;	repend/only bx/draw [
 							;'fill-pen 'radial 0.0.0.254 0.0.0.239 
 							;'pen 'silver 
 							;'circle 0x0 to-integer scale * w ;e0 sphere
@@ -392,11 +396,11 @@ ctx: context [
 							;					 cam * scale * y / (cam + z)
 							;'circle as-pair scale * x scale * y 1
 							;'circle p 1
-							'pen 'red   ;point on e0 sphere where plane touches
-							'circle as-pair cam * scale * c / (cam + a) cam * scale * b / (cam + a) 1
-							'pen 'orange
-							'circle as-pair scale * c scale * b 1
-						]
+					;		'pen 'red   ;point on e0 sphere where plane touches
+					;		'circle as-pair cam * scale * c / (cam + a) cam * scale * b / (cam + a) 1
+					;		'pen 'orange
+					;		'circle as-pair scale * c scale * b 1
+					;	]
 						;p1: 
 					]
 					;all [point? elem ideal-line? elem][
@@ -419,20 +423,20 @@ ctx: context [
 					]
 					point? elem [
 						set [z y x w] grade/only elem 3
-						;repend bx/draw ['circle p: as-pair scale * x / w scale * y / w 1]
-						p: as-pair cam * scale * x / (cam + z) cam * scale * y / (cam + z)
+						;repend bx/draw ['circle tp: as-pair scale * x / w scale * y / w 1]
+						tp: as-pair cam * scale * x / (cam + z) cam * scale * y / (cam + z)
 						append bx/draw 'push
 						repend/only bx/draw [
 							'pen 'silver
-							;'line 0x0 p 
+							;'line 0x0 tp 
 							'circle as-pair scale * x scale * y 1
 						]
-						repend bx/draw ['circle p 1]
+						repend bx/draw ['circle tp 1]
 					]
 				]
 			]
 			pair!   [mv: elem]
-			string! [repend bx/draw ['text p + mv elem]]
+			string! [repend bx/draw ['text tp + mv elem]]
 			object! [
 				;probe elem
 				append bx/draw to-word elem/type
@@ -467,6 +471,10 @@ ctx: context [
 			]]
 			integer! float! [repend bx/draw ['line-width elem]]
 			;block! [append body-of :bx/actors/on-time anim/enabled?: yes elem rate: 10]
+			block! [
+				rotation-points: elem 
+				rot-code: find/tail code block!
+			]
 		]
 	]
 	
@@ -477,7 +485,7 @@ ctx: context [
 	]
 	
 	system/view/auto-sync?: no
-	set 'play func [/local ar bt code reduced ref] bind [
+	set 'play func [/local ar bt reduced ref] bind [
 		reduced:  clear []
 		view/flags/options [
 			title "GA playground"
@@ -502,6 +510,7 @@ ctx: context [
 						;probe reduced
 						foreach elem reduced [render elem]
 						;probe at bx/draw 15
+						set-focus bx
 						show bx
 					] on-down [
 						code: bind load ar/text self 
@@ -557,16 +566,36 @@ ctx: context [
 				if ref [
 					either event/alt-down? [
 						unless pin [pin: e]
-						ref/3: ref/3 + to-integer e/x - pin/x
+						ref/3: ref/3 + (to-integer e/x - pin/x) / scale
 					][
 						pin: none
 						change/part ref reduce [e/x - origin/x / scale e/y - origin/y / scale] 2 
 					]
 				]
-				;probe code
 				bt/actors/on-click bt none
 				show face
-			]]; bx/draw/11: event/offset]]
+			]]
+			on-wheel [local [p p' elem e draw ref]
+				if ax/:axis [
+					mv: 0x0
+					clear at bx/draw 15
+					system/view/auto-sync?: off
+					clear reduced 
+					foreach p rotation-points [
+						set p grade rotate/angle get p ax/:axis event/picked * degrees 3
+						ref: next find/tail code p
+						change/part ref next reverse grade/only p': get p 3 3
+						append reduced p'
+						if string? ref/4 [append reduced ref/4]
+					]
+					repend reduced rot-code
+					foreach elem reduced [render elem]
+					set-focus bx
+					show bx
+					
+				]
+			]
+			on-key [axis: switch event/key [#"x" ['x] #"y" ['y] #"z" ['z] #"^[" ['esc]]]
 			do [
 				set-focus ar
 				bx/draw/translate: bx/size / 2
@@ -593,10 +622,11 @@ p0: point 0 -2 0 "P0" 		;tip of the pyramid (perspector)
 p1: point -2 1 -1 "P1" 		;lower triangle vertices
 p2: point .5 1 1 "P2"
 p3: point 1 1.5 -.5 "P3"
-p123: p1 & p2 & p3 			;lower triangle plane
-o1: point -2.5 -.3 0 "O1" 	;point defining the plane of upper triangle
+o1: point -2.5 -.3 0 "O1" 		;points defining the plane of upper triangle
 o2: point .5 -1.5 1 "O2"
 o3: point 1 .5 -1 "O3"
+[p0 p1 p2 p3 o1 o2 o3]
+p123: p1 & p2 & p3 			;lower triangle plane
 o123: o1 & o2 & o3 			;upper triangle plane
 silver 1
 p01: p0 & p1 p02: p0 & p2 p03: p0 & p3 ;pyramid edges
@@ -612,5 +642,14 @@ black
 x1: normalized/point (op: o123 ^ p123) ^ (p0 & p1 & p2)	;points of intersection of corresponding edges extentions
 x2: normalized/point op ^ (p0 & p1 & p3)
 x3: normalized/point op ^ (p0 & p2 & p3)
-1 red x1 & x3				;line through intersection points (perspetrix)
+1 red x1 & x3		;line through intersection points (perspetrix)
+]
+;3D cube
+e.g. [
+p1: point -1 -1 -1 "P1" p2: point 1 -1 -1 "P2" p3: point 1 1 -1 "P3" p4: point -1 1 -1 "P4"
+p5: point -1 -1 1 "P5" p6: point 1 -1 1 "P6" p7: point 1 1 1 "P7" p8: point -1 1 1 "P8"
+[p1 p2 p3 p4 p5 p6 p7 p8]
+rectangle p1 p2 p3 p4
+rectangle p5 p6 p7 p8 
+line p1 p5 line p2 p6 line p3 p7 line p4 p8
 ]
