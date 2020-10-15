@@ -18,3 +18,6 @@ p2: point 1 0 0 "P2"
 [p1 p2]
 ...
 ```
+Rotation axis is set by pressing `x`, `y` or `z` key. 
+Points are rotated with wheel.
+`esc` disables rotation.
