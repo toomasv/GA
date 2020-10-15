@@ -292,13 +292,13 @@ context [
 	
 	set 'play func [/local ar bt code reduced ref] bind [
 		reduced:  clear []
-		view [
+		view/flags/options [
 			title "GA playground"
 			below
-			panel [
+			pan: panel [
 				origin 0x0
 				ar: area 340x100 
-				panel [
+				opts: panel [
 					origin 0x0 ;below 
 					text "Scale:" 40 field 30 data scale on-change [
 						scale: face/data 
@@ -306,7 +306,7 @@ context [
 					]
 					bt: button "Show" [/local [p elem e draw]
 						mv: 0x0
-						draw: clear at bx/draw 18  ;draw - for parsing
+						draw: clear at bx/draw 15  ;draw - for parsing
 						reduce/into code clear reduced 
 						;parse code [collect into reduced any [
 						;	ahead set-word! s: [keep (to-set-word rejoin ["_" s/1]) keep (do/next s 's)] :s
@@ -322,21 +322,21 @@ context [
 					] 
 					return
 					text "Origin:" 40 
-					drop-list data ["Center" "Top-left" "Bottom-left"] select 1 on-change [
+					orig: drop-list data ["Center" "Top-left" "Bottom-left"] select 1 on-change [
 						origin: switch face/selected [
 							1 [bx/size / 2]
 							2 [0x0]
 							3 [as-pair 0 bx/size/y - 1]
 						]
-						bx/draw/7: origin
-						bx/draw/11: as-pair 0 - origin/x 0
-						bx/draw/12: as-pair bx/size/x - origin/x 0
-						bx/draw/14: as-pair 0 0 - origin/y
-						bx/draw/15: as-pair 0 bx/size/y - origin/y
+						bx/draw/translate: origin
+						bx/draw/8: as-pair 0 - origin/x 0
+						bx/draw/9: as-pair bx/size/x - origin/x 0
+						bx/draw/11: as-pair 0 0 - origin/y
+						bx/draw/12: as-pair 0 bx/size/y - origin/y
 					] 
 					return
-					check "Axis" data true 40 on-change [bx/draw/9: pick [silver off] face/data]
-					check "Grid" data true 40 on-change [bx/draw/2/4/2: pick [snow off] face/data]
+					check "Axis" data true 40 on-change [bx/draw/pen: pick [silver off] face/data]
+					check "Grid" data true 40 on-change [bx/draw/2/4/pen: pick [snow off] face/data]
 					;anim: button 50 "Go" disabled [
 					;	switch face/text [
 					;		"Go"   [probe bx/rate: rate face/text: "Stop"]
@@ -347,12 +347,12 @@ context [
 			]
 			bx: box 500x500 white draw [
 				push [fill-pen pattern 10x10 [pen snow line 9x0 0x0 0x9] pen silver box 0x0 499x499]
-				transform 0 1 1 250x250
+				translate 250x250
 				pen silver
 				line -250x0 250x0
 				line 0x-250 0x250
 				pen black
-			] on-down [;probe code probe face/draw
+			] on-down [
 				ref: none
 				parse face/draw [any [
 					'circle s: 2 skip 'text if (nearby >= distance (event/offset - origin) - s/1) skip s: (
@@ -364,15 +364,24 @@ context [
 			all-over on-over [if event/down? [
 				e: event/offset 
 				if ref [
-					change/part ref reduce [e/x - origin/x / scale e/y - origin/y / scale] 2 ;at code 3
+					change/part ref reduce [e/x - origin/x / scale e/y - origin/y / scale] 2 
 				]
-				;probe code
 				bt/actors/on-click bt none
-				;bx/draw: bx/draw
-			]]; bx/draw/11: event/offset]]
+			]]
 			do [
 				set-focus ar
-				bx/draw/7: bx/size / 2
+				bx/draw/translate: bx/size / 2
+			]
+		] 'resize [
+			actors: object [
+				on-resizing: func [face event][
+					pan/size/x: face/size/x - 20
+					opts/offset/x: face/size/x - 171
+					ar/size/x: opts/offset/x - 10
+					bx/size: as-pair face/size/x - 20 face/size/y - pan/size/y - 30
+					bx/draw/2/9: bx/size - 1
+					orig/actors/on-change orig none
+				]
 			]
 		]
 	] algebra-ctx
@@ -430,6 +439,7 @@ p1: point -2 -1 "P1" p2: point -1 0 "P2" p3: point -2 1 "P3"
 q1: point -1 -2 "Q1" 
 q2: point 1.5 2 "Q2" 
 q3: point -1.5 2 "Q3"
+;Non-dragables
 silver 1 
 l1: p0 & p1 l2: p0 & p2 l3: p0 & p3
 leaf
@@ -447,4 +457,21 @@ triangle o1 o2 o3
 blue 
 k1: l6 ^ m3 k2: l4 ^ m1 l5 ^ m4
 1 k1 & k2 ;perspectrix
+]
+;Harmonic homology
+e.g. [
+red 3
+z: point -2 1 "Z" p: point -1 1 "P"
+z': point 0 -1 "Z'"
+o1: point 0 2 "O1" o2: point -1.5 -2 "O2"
+black 1
+m: o1 & o2 ;vec 1 -.5 0 
+k: z & p
+blue s: m ^ k "S"
+silver
+zln: z & z' pln: p & z' sln: s & z'
+z2ln: z & (m ^ pln)
+xln: (zln ^ m) & (sln ^ z2ln)
+leaf 
+xln ^ k "P'"
 ]
