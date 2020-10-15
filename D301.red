@@ -6,6 +6,7 @@ Red [
 cpy: func [a [series! object!]][copy/deep a]
 nearby: 4
 axis: none
+shaped?: no
 
 norm-plane: func [
 	plane [vector!]
@@ -317,6 +318,23 @@ circle2: function [
 	figure/with circle center radius
 ]
 
+center-z: func [obj [object!] /local out [float!]][
+	out: 0.0
+	foreach p obj/points [out: out + p/12]
+	out / length? obj/points
+]
+
+shape: func [figs [block!] /local figures [block!]][
+	out: clear []
+	figures: []
+	shaped?: yes
+	reduce/into figs clear figures
+	sort/compare figures func [a b][
+		(center-z a) >= center-z b
+	]
+	to-paren append/only out figures
+]
+
 algebra [3 0 1]
 
 ideal-plane: e0
@@ -330,7 +348,7 @@ ctx: context [
 	bx: none
 	rate: none
 	el: none
-	rotation-points: copy []
+	rotation-points: none
 	ax: reduce ['x e23 'y e13 'z e12 'esc none]
 	code: none
 	degrees: 5
@@ -485,9 +503,11 @@ ctx: context [
 	]
 	
 	system/view/auto-sync?: no
-	set 'play func [/local ar bt reduced ref] bind [
+	set 'play func [/local ar bt reduced rotuced ref] bind [
+		shaped?: no
 		reduced:  clear []
-		view/flags/options [
+		rotuced: clear []
+		view lay: layout/flags/options [
 			title "GA playground"
 			below
 			pan: panel [
@@ -503,15 +523,15 @@ ctx: context [
 						mv: 0x0
 						draw: clear at bx/draw 15  ;draw - for parsing
 						reduce/into code clear reduced 
-						;parse code [collect into reduced any [
-						;	ahead set-word! s: [keep (to-set-word rejoin ["_" s/1]) keep (do/next s 's)] :s
-						;|	s: keep (do/next s 's) :s
-						;]]
-						;probe reduced
-						foreach elem reduced [render elem]
+						either shaped? [
+							compose/into reduced clear rotuced ;reduced: copy rotuced
+							foreach elem rotuced [render elem]
+						][
+							foreach elem reduced [render elem]
+						]
 						;probe at bx/draw 15
 						set-focus bx
-						show bx
+						show lay
 					] on-down [
 						code: bind load ar/text self 
 						;bx/rate: none 
@@ -569,7 +589,10 @@ ctx: context [
 						ref/3: ref/3 + (to-integer e/x - pin/x) / scale
 					][
 						pin: none
-						change/part ref reduce [e/x - origin/x / scale e/y - origin/y / scale] 2 
+						change/part ref reduce [
+							e/x - origin/x / scale 
+							e/y - origin/y / scale
+						] 2 
 					]
 				]
 				bt/actors/on-click bt none
@@ -589,7 +612,12 @@ ctx: context [
 						if string? ref/4 [append reduced ref/4]
 					]
 					repend reduced rot-code
-					foreach elem reduced [render elem]
+					either shaped? [
+						compose/into reduced clear rotuced 
+						foreach elem rotuced [render elem]
+					][
+						foreach elem reduced [render elem]
+					]
 					set-focus bx
 					show bx
 					
@@ -649,7 +677,32 @@ e.g. [
 p1: point -1 -1 -1 "P1" p2: point 1 -1 -1 "P2" p3: point 1 1 -1 "P3" p4: point -1 1 -1 "P4"
 p5: point -1 -1 1 "P5" p6: point 1 -1 1 "P6" p7: point 1 1 1 "P7" p8: point -1 1 1 "P8"
 [p1 p2 p3 p4 p5 p6 p7 p8]
+#0F0 shape [
 rectangle p1 p2 p3 p4
 rectangle p5 p6 p7 p8 
-line p1 p5 line p2 p6 line p3 p7 line p4 p8
+rectangle p1 p4 p8 p5
+rectangle p2 p3 p7 p6
+rectangle p1 p2 p6 p5
+rectangle p3 p4 p8 p7
+]
+]
+;Tetrahedron
+e.g. [
+p1: point -1 -1 0 "P1" p2: point 1 -1 0 "P2"
+p3: point 0 1 -1 "P3" p4: point 0 1 1 "P4"
+[p1 p2 p3 p4]
+#FF000099 triangle p3 p1 p2
+triangle p2 p3 p4
+triangle p1 p2 p4
+triangle p1 p4 p3
+blue
+l1: point 1.5 1.5 1.5 "L1" l2: point -1.5 -1.5 -1.5 "L2"
+line l1 l2
+'off l: l1 & l2
+black
+lp123: normalized/point l ^ (p1 & p2 & p3)
+lp124: normalized/point l ^ (p1 & p2 & p4)
+white 
+lp134: normalized/point l ^ (p1 & p3 & p4)
+lp234: normalized/point l ^ (p2 & p3 & p4)
 ]
