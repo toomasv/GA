@@ -1,5 +1,5 @@
 Red [
-	Description: "3D projective geometric algebra functions (Clifford [2 0 1])"
+	Description: "3D projective geometric algebra functions (Clifford [3 0 1])"
 ]
 #include %algebra.red
 
