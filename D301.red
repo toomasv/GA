@@ -207,21 +207,30 @@ perp: func [
 	v2 [vector!] "Blade from which it is rejected"
 ][v1 ^ v2 * v2]
 
+get-point: func [point][
+	switch type?/word point [
+		block!  [pnt point/1 point/2 point/3 1]
+		word!   [get-point get point]
+		vector! [point]
+	]
+]
+
 figure: func [
 	"Prepare object for given type of figure"
 	'type [word!] "Type of figure"
 	points [vector! block!] "Defining point(s) for the figure; as block, it may contain vectors or blocks of coordinates for each point"
 	/with 
 		rest [block! integer! word!] "Rest of parameters"
+	/name 'nam [lit-word! none!]
+	/fill fill-clr
+	/pen  pen-clr
 	return: [object!]
 ][
 	points: collect [
 		switch type?/word points [
 			block! [
 				forall points [
-					keep switch/default type?/word points/1 [
-						block! [pnt points/1/1 points/1/2 points/1/3 1]
-					][points/1] 
+					keep get-point points/1 
 				] 
 			]
 			vector! [keep points]
@@ -229,8 +238,11 @@ figure: func [
 	]
 	object compose/only [
 		type: (to-lit-word type) 
+		name: (nam)
 		points: (points) 
 		rest: (rest)
+		fill: (fill-clr)
+		pen: (pen-clr)
 	]
 ]
 
@@ -247,11 +259,18 @@ point: func [
 line:  func [
 	p1 [vector! block!] 
 	p2 [vector! block!] 
+	/pen clr
 	return: [object!]
+	/local points
 ][
-	figure line reduce [
+	points: reduce [
 		either vector? p1 [p1] [pnt p1/1 p1/2 p1/3 1] 
 		either vector? p2 [p2] [pnt p2/1 p2/2 p1/3 1]
+	]
+	either pen [
+		figure/pen line points clr
+	][
+		figure line points
 	]
 ]
 
@@ -267,18 +286,38 @@ rectangle: func [
 	p2 [block! vector!]
 	p3 [block! vector!]
 	p4 [block! vector!]
+	/fill fill-clr
+	/pen pen-clr
 	return: [object!]
 ][
-	figure polygon reduce [p1 p2 p3 p4]
+	points: reduce [p1 p2 p3 p4]
+	case [
+		all  [fill pen][figure/fill/pen polygon points fill-clr pen-clr]
+		fill [figure/fill polygon points fill-clr]
+		pen  [figure/pen  polygon points pen-clr]
+		true [figure polygon points]
+	]
 ]
+
 
 triangle: func [
 	p1 [block! vector!] 
 	p2 [block! vector!] 
 	p3 [block! vector!]
+	/fill fill-clr
+	/pen pen-clr
 	return: [object!]
+	/local points
 ][
-	figure polygon reduce [p1 p2 p3]
+	points: reduce [p1 p2 p3]
+	case [
+		all [fill pen][
+			figure/fill/pen polygon points fill-clr pen-clr
+		]
+		fill [figure/fill polygon points fill-clr]
+		pen  [figure/pen  polygon points pen-clr]
+		true [figure polygon points]
+	]
 ]
 
 polygon: func [points [block!]][
@@ -457,6 +496,9 @@ ctx: context [
 			string! [repend bx/draw ['text tp + mv elem]]
 			object! [
 				;probe elem
+				if elem/fill [repend bx/draw ['fill-pen elem/fill]]
+				if elem/pen  [repend bx/draw ['pen elem/pen]]
+				if elem/name [append bx/draw to-set-word elem/name]
 				append bx/draw to-word elem/type
 				foreach e elem/points [
 					switch type?/word e [
@@ -473,6 +515,7 @@ ctx: context [
 							;				3 
 							;		2
 						]
+						word! []
 						pair!   [mv: e]
 						string! [repend bx/draw ['text p + mv e]]
 					]
