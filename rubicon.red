@@ -742,7 +742,7 @@ ctx: context [
 				set-focus bx
 				bt/actors/on-click bt none
 				show bx
-				if 30 <= tick: tick + 1 [face/rate: none ready?: yes]
+				if 18 <= tick: tick + 1 [face/rate: none ready?: yes]
 			]
 			on-up [system/view/auto-sync?: on]
 			all-over on-over [
@@ -814,7 +814,7 @@ ctx: context [
 										
 										tick: 0
 										ready?: no
-										degrees: 3
+										degrees: 5
 										face/rate: 20
 									]
 								]
